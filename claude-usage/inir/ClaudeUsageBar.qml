@@ -45,7 +45,6 @@ MouseArea {
                     + (ClaudeUsage.weekly ? " · " + Math.round(ClaudeUsage.weekly.utilization) + "%" : "")
         }
         MaterialSymbol {
-            visible: ClaudeUsage.totalAgents > 0
             fill: ClaudeUsage.busyCount > 0 ? 1 : 0
             text: "terminal"
             iconSize: Appearance.font.pixelSize.large
@@ -55,7 +54,6 @@ MouseArea {
             Layout.alignment: Qt.AlignVCenter
         }
         StyledText {
-            visible: ClaudeUsage.totalAgents > 0
             Layout.alignment: Qt.AlignVCenter
             font.pixelSize: Appearance.font.pixelSize.small
             color: ClaudeUsage.busyCount > 0 ? Appearance.colors.colPrimary : root.textColor
@@ -69,7 +67,7 @@ MouseArea {
 
         ColumnLayout {
             anchors.centerIn: parent
-            implicitWidth: 220
+            implicitWidth: 260
             spacing: 8
 
             StyledText {
@@ -127,16 +125,19 @@ MouseArea {
             }
 
             StyledText {
-                visible: ClaudeUsage.totalAgents > 0
                 Layout.topMargin: 4
-                text: Translation.tr("Sessions · %1 busy / %2").arg(ClaudeUsage.busyCount).arg(ClaudeUsage.totalAgents)
+                text: ClaudeUsage.busyCount > 0 ? Translation.tr("Active subagents · %1").arg(ClaudeUsage.busyCount)
+                    : Translation.tr("No active subagents")
                 font { weight: Font.Medium; pixelSize: Appearance.font.pixelSize.smaller }
                 color: Appearance.colors.colOnSurfaceVariant
             }
             Repeater {
                 model: ClaudeUsage.agents
-                delegate: RowLayout {
+                delegate: ColumnLayout {
                     required property var modelData
+                    Layout.fillWidth: true
+                    spacing: 1
+                    RowLayout {
                     Layout.fillWidth: true
                     spacing: 6
                     Rectangle {
@@ -154,14 +155,22 @@ MouseArea {
                         color: Appearance.colors.colOnSurfaceVariant
                     }
                     StyledText {
-                        // spawned by a parent process/SDK rather than opened in Claude Desktop
-                        visible: modelData.entrypoint !== "claude-desktop"
-                        text: modelData.entrypoint
+                        text: modelData.parent
                         font.pixelSize: Appearance.font.pixelSize.smallest
                         color: Appearance.colors.colPrimary
                     }
                     StyledText {
                         text: ClaudeUsage.durationText(modelData.uptime_s)
+                        font.pixelSize: Appearance.font.pixelSize.smallest
+                        color: Appearance.colors.colSubtext
+                    }
+                    }
+                    StyledText {
+                        visible: text !== ""
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 14
+                        elide: Text.ElideRight
+                        text: modelData.brief !== "" ? modelData.brief : modelData.task
                         font.pixelSize: Appearance.font.pixelSize.smallest
                         color: Appearance.colors.colSubtext
                     }

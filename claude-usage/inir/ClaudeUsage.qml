@@ -9,7 +9,7 @@ import QtQuick
  * Claude subscription usage (5h session / weekly limits).
  * Data comes from ~/.config/quickshell/claude-usage/fetch-usage.py, which
  * reads Claude Code's OAuth token and caches the response for 60 s.
- * Running Claude Code sessions come from list-agents.py (local files only).
+ * Active subagents (busy, not opened in Claude Desktop) come from list-agents.py (local only).
  */
 Singleton {
     id: root
