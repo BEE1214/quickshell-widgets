@@ -44,6 +44,24 @@ MouseArea {
                 : Math.round(ClaudeUsage.session.utilization) + "%"
                     + (ClaudeUsage.weekly ? " · " + Math.round(ClaudeUsage.weekly.utilization) + "%" : "")
         }
+        MaterialSymbol {
+            visible: ClaudeUsage.totalAgents > 0
+            fill: ClaudeUsage.busyCount > 0 ? 1 : 0
+            text: "terminal"
+            iconSize: Appearance.font.pixelSize.large
+            color: ClaudeUsage.busyCount > 0 ? Appearance.colors.colPrimary : root.textColor
+            opacity: ClaudeUsage.busyCount > 0 ? 1 : 0.5
+            Layout.leftMargin: 4
+            Layout.alignment: Qt.AlignVCenter
+        }
+        StyledText {
+            visible: ClaudeUsage.totalAgents > 0
+            Layout.alignment: Qt.AlignVCenter
+            font.pixelSize: Appearance.font.pixelSize.small
+            color: ClaudeUsage.busyCount > 0 ? Appearance.colors.colPrimary : root.textColor
+            opacity: ClaudeUsage.busyCount > 0 ? 1 : 0.5
+            text: ClaudeUsage.busyCount
+        }
     }
 
     StyledPopup {
@@ -102,6 +120,48 @@ MouseArea {
                     }
                     StyledText {
                         text: Translation.tr("Resets in %1").arg(ClaudeUsage.resetText(modelData.resets_at))
+                        font.pixelSize: Appearance.font.pixelSize.smallest
+                        color: Appearance.colors.colSubtext
+                    }
+                }
+            }
+
+            StyledText {
+                visible: ClaudeUsage.totalAgents > 0
+                Layout.topMargin: 4
+                text: Translation.tr("Sessions · %1 busy / %2").arg(ClaudeUsage.busyCount).arg(ClaudeUsage.totalAgents)
+                font { weight: Font.Medium; pixelSize: Appearance.font.pixelSize.smaller }
+                color: Appearance.colors.colOnSurfaceVariant
+            }
+            Repeater {
+                model: ClaudeUsage.agents
+                delegate: RowLayout {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    spacing: 6
+                    Rectangle {
+                        implicitWidth: 8
+                        implicitHeight: 8
+                        radius: 4
+                        color: modelData.status === "busy" ? Appearance.colors.colPrimary : Appearance.colors.colOutline
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        elide: Text.ElideRight
+                        text: modelData.name
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: Appearance.colors.colOnSurfaceVariant
+                    }
+                    StyledText {
+                        // spawned by a parent process/SDK rather than opened in Claude Desktop
+                        visible: modelData.entrypoint !== "claude-desktop"
+                        text: modelData.entrypoint
+                        font.pixelSize: Appearance.font.pixelSize.smallest
+                        color: Appearance.colors.colPrimary
+                    }
+                    StyledText {
+                        text: ClaudeUsage.durationText(modelData.uptime_s)
                         font.pixelSize: Appearance.font.pixelSize.smallest
                         color: Appearance.colors.colSubtext
                     }
