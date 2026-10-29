@@ -5,3 +5,4 @@ Personal collection of Quickshell widgets.
 | Widget | Description |
 | --- | --- |
 | [claude-usage](claude-usage/) | Claude subscription limit usage (session / weekly) |
+| [ollama-usage](ollama-usage/) | Local Ollama status (loaded models, memory) |
