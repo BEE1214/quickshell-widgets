@@ -6,16 +6,10 @@ Shows Claude subscription limits (5h session, weekly) in Quickshell.
   `~/.claude/.credentials.json`, calls Anthropic's usage endpoint and prints
   normalized JSON. Never refreshes or writes the token; if it is expired, run
   `claude` once. Result is cached for 60 s in `~/.cache/claude-usage.json`.
-- `list-agents.py` – lists active subagents from two sources, merged by pid:
-  - Claude Code: live, busy sessions not opened in Claude Desktop (`entrypoint` ≠
-    `claude-desktop`, e.g. `claude -p` spawned by Hermes or an SDK script), with the parent
-    process name and the task (briefing file name, else the first prompt). Reads
-    `~/.claude/sessions/<pid>.json`; a session is live when `/proc/<pid>` start time matches
-    `procStart`.
-  - Hermes kanban: tasks with status `running` whose worker pid is alive, read-only from
-    `~/.hermes/kanban.db` and `~/.hermes/kanban/boards/*/kanban.db`; shown with the
-    assignee profile and board name.
-  Local only, no network.
+- `list-agents.py` – lists active Claude Code subagents: live, busy sessions not opened in
+  Claude Desktop (`entrypoint` ≠ `claude-desktop`, e.g. `claude -p` spawned by Hermes or an
+  SDK script), with the parent process name and the task (briefing file name, else the first prompt). Reads `~/.claude/sessions/<pid>.json`; local
+  only. A session counts as live when `/proc/<pid>` start time matches `procStart`.
 - `standalone/shell.qml` – floating card. Run with `qs -c claude-usage`
   (copy this folder plus `fetch-usage.py` to `~/.config/quickshell/claude-usage/`).
 - `inir/` – bar chip + hover popup for the iNiR shell:

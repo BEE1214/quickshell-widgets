@@ -1,21 +1,16 @@
 #!/usr/bin/env python3
 """Print active Claude Code subagents as JSON for the Quickshell widget.
 
-Two sources, merged and de-duplicated by pid:
-  * Claude Code: live, busy sessions not opened in Claude Desktop (entrypoint other than
-    `claude-desktop`), e.g. `claude -p` spawned by Hermes or an SDK script.
-  * Hermes kanban: tasks with status `running` whose worker process is alive
-    (~/.hermes/kanban.db and ~/.hermes/kanban/boards/*/kanban.db, opened read-only).
+A subagent is a live, busy session that was not opened in Claude Desktop (entrypoint
+other than `claude-desktop`), e.g. `claude -p` spawned by Hermes or an SDK script.
 
 Claude Code writes ~/.claude/sessions/<pid>.json for each process. Files of dead
 processes linger, so liveness is checked against /proc/<pid>/stat (start time must
 match `procStart`, which also guards against PID reuse). Local files only, no network.
 """
-import glob, json, os, re, sqlite3, sys, time
+import glob, json, os, re, sys, time
 
 SESSIONS = os.path.expanduser("~/.claude/sessions/*.json")
-KANBAN_DBS = [os.path.expanduser("~/.hermes/kanban.db")] + sorted(
-    glob.glob(os.path.expanduser("~/.hermes/kanban/boards/*/kanban.db")))
 
 
 def parent_name(pid):
@@ -99,37 +94,6 @@ for path in glob.glob(SESSIONS):
         "cwd": s.get("cwd", ""),
         "uptime_s": int((now - s.get("startedAt", now)) / 1000),
     })
-
-def kanban_agents(seen):
-    out = []
-    for db in KANBAN_DBS:
-        board = os.path.basename(os.path.dirname(db)) if "/boards/" in db else "main"
-        try:
-            con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=1)
-            rows = con.execute(
-                "SELECT title, assignee, worker_pid, started_at "
-                "FROM tasks WHERE status = 'running'").fetchall()
-            con.close()
-        except sqlite3.Error:
-            continue
-        for title, assignee, pid, started in rows:
-            if not pid or pid in seen or not os.path.isdir(f"/proc/{pid}"):
-                continue
-            out.append({
-                "pid": pid,
-                "name": title or f"task on {board}",
-                "status": "busy",
-                "entrypoint": "hermes-kanban",
-                "parent": assignee or "kanban",
-                "task": f"kanban · {board}",
-                "brief": "",
-                "cwd": "",
-                "uptime_s": int(now / 1000 - started) if started else 0,
-            })
-    return out
-
-
-agents += kanban_agents({a["pid"] for a in agents})
 
 # longest running first
 agents.sort(key=lambda a: -a["uptime_s"])
