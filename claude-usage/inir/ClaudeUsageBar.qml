@@ -44,22 +44,6 @@ MouseArea {
                 : Math.round(ClaudeUsage.session.utilization) + "%"
                     + (ClaudeUsage.weekly ? " · " + Math.round(ClaudeUsage.weekly.utilization) + "%" : "")
         }
-        MaterialSymbol {
-            fill: ClaudeUsage.busyCount > 0 ? 1 : 0
-            text: "terminal"
-            iconSize: Appearance.font.pixelSize.large
-            color: ClaudeUsage.busyCount > 0 ? Appearance.colors.colPrimary : root.textColor
-            opacity: ClaudeUsage.busyCount > 0 ? 1 : 0.5
-            Layout.leftMargin: 4
-            Layout.alignment: Qt.AlignVCenter
-        }
-        StyledText {
-            Layout.alignment: Qt.AlignVCenter
-            font.pixelSize: Appearance.font.pixelSize.small
-            color: ClaudeUsage.busyCount > 0 ? Appearance.colors.colPrimary : root.textColor
-            opacity: ClaudeUsage.busyCount > 0 ? 1 : 0.5
-            text: ClaudeUsage.busyCount
-        }
     }
 
     StyledPopup {
@@ -67,7 +51,7 @@ MouseArea {
 
         ColumnLayout {
             anchors.centerIn: parent
-            implicitWidth: 260
+            implicitWidth: 220
             spacing: 8
 
             StyledText {
@@ -118,59 +102,6 @@ MouseArea {
                     }
                     StyledText {
                         text: Translation.tr("Resets in %1").arg(ClaudeUsage.resetText(modelData.resets_at))
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        color: Appearance.colors.colSubtext
-                    }
-                }
-            }
-
-            StyledText {
-                Layout.topMargin: 4
-                text: ClaudeUsage.busyCount > 0 ? Translation.tr("Active subagents · %1").arg(ClaudeUsage.busyCount)
-                    : Translation.tr("No active subagents")
-                font { weight: Font.Medium; pixelSize: Appearance.font.pixelSize.smaller }
-                color: Appearance.colors.colOnSurfaceVariant
-            }
-            Repeater {
-                model: ClaudeUsage.agents
-                delegate: ColumnLayout {
-                    required property var modelData
-                    Layout.fillWidth: true
-                    spacing: 1
-                    RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 6
-                    Rectangle {
-                        implicitWidth: 8
-                        implicitHeight: 8
-                        radius: 4
-                        color: modelData.status === "busy" ? Appearance.colors.colPrimary : Appearance.colors.colOutline
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-                    StyledText {
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
-                        text: modelData.name
-                        font.pixelSize: Appearance.font.pixelSize.smaller
-                        color: Appearance.colors.colOnSurfaceVariant
-                    }
-                    StyledText {
-                        text: modelData.parent
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        color: Appearance.colors.colPrimary
-                    }
-                    StyledText {
-                        text: ClaudeUsage.durationText(modelData.uptime_s)
-                        font.pixelSize: Appearance.font.pixelSize.smallest
-                        color: Appearance.colors.colSubtext
-                    }
-                    }
-                    StyledText {
-                        visible: text !== ""
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 14
-                        elide: Text.ElideRight
-                        text: modelData.brief !== "" ? modelData.brief : modelData.task
                         font.pixelSize: Appearance.font.pixelSize.smallest
                         color: Appearance.colors.colSubtext
                     }

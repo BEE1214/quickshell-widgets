@@ -6,3 +6,4 @@ Personal collection of Quickshell widgets.
 | --- | --- |
 | [claude-usage](claude-usage/) | Claude subscription limit usage (session / weekly) |
 | [ollama-usage](ollama-usage/) | Local Ollama status (loaded models, memory) |
+| [hermes-sessions](hermes-sessions/) | Hermes sessions and working subagents |
