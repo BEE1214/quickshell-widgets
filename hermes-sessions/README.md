@@ -10,7 +10,9 @@ lists sessions (with what each is doing) and the working subagents.
     CPU or have child processes. Hermes keeps no activity record for CLI sessions, so the
     script samples CPU for 1 s per run (≥ 3 clock ticks; idle ones burn ~0.5).
   - Desktop sessions (`state.db`) count as active with Hermes activity in the last 2 min
-    (shown with `last_activity_description`, e.g. `tool running: terminal`).
+    (shown with `last_activity_description`, e.g. `tool running: terminal`), or while they
+    own a live background process (`processes.json`) or a running delegation, even if
+    their last logged activity is old (shown as "waiting on …").
 - **subagents** – merged from
   - delegations: each goal of a `running` row in `async_delegations` (the in-process
     "Subagents · N live" panel),

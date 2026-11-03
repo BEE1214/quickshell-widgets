@@ -4,7 +4,8 @@
 Local files only, all databases opened read-only. Output:
   sessions  – ACTIVE sessions only: CLI processes that are using CPU or have child
               processes right now, and desktop sessions with Hermes activity in the last
-              2 minutes (idle ones are left out)
+              2 minutes, or that own a live background process / running delegation
+              (idle ones are left out)
   agents    – subagents doing work right now, merged from:
       * delegations: each goal of a `running` row in async_delegations
         (the "Subagents · N live" panel; they run inside the Hermes process)
@@ -98,26 +99,59 @@ def cli_sessions():
     return out
 
 
+def busy_session_ids(db):
+    """Sessions that are quiet in the database but still working: they own a live
+    background process (processes.json) or a running delegation."""
+    busy = {}
+    try:
+        with open(os.path.join(os.path.dirname(db), "processes.json")) as f:
+            procs = json.load(f)
+    except (OSError, ValueError):
+        procs = []
+    for p in procs if isinstance(procs, list) else []:
+        sid = p.get("parent_session_id") or p.get("owner_task_id")
+        if sid and alive(p.get("pid")):
+            busy.setdefault(sid, []).append("background process")
+    try:
+        con = ro(db)
+        rows = con.execute(
+            "SELECT parent_session_id, owner_pid FROM async_delegations "
+            "WHERE state = 'running' AND completed_at IS NULL").fetchall()
+        con.close()
+    except sqlite3.Error:
+        rows = []
+    for sid, pid in rows:
+        if sid and alive(pid):
+            busy.setdefault(sid, []).append("subagents")
+    return {sid: ", ".join(f"{r.count(x)} {x}" for x in dict.fromkeys(r)) for sid, r in busy.items()}
+
+
 def desktop_sessions():
     out = []
     for db in state_dbs():
+        busy = busy_session_ids(db)
+        marks = ",".join("?" * len(busy)) or "NULL"
         try:
             con = ro(db)
             rows = con.execute(
-                "SELECT title, last_activity_at, last_activity_description, started_at "
+                "SELECT id, title, last_activity_at, last_activity_description, started_at "
                 "FROM sessions WHERE ended_at IS NULL AND parent_session_id IS NULL "
-                "AND source IN ('local', 'desktop') AND last_activity_at > ?",
-                (now - ACTIVE_WINDOW_S,)).fetchall()
+                "AND source IN ('local', 'desktop') "
+                f"AND (last_activity_at > ? OR id IN ({marks}))",
+                (now - ACTIVE_WINDOW_S, *busy)).fetchall()
             con.close()
         except sqlite3.Error:
             continue
-        for title, last, desc, started in rows:
+        for sid, title, last, desc, started in rows:
+            desc = " ".join((desc or "").split())
+            if sid in busy and now - (last or 0) > ACTIVE_WINDOW_S:
+                desc = f"waiting on {busy[sid]}"
             out.append({
                 "kind": "desktop",
                 "profile": profile_of(db),
                 "title": " ".join((title or "untitled").split())[:80],
-                "activity": " ".join((desc or "").split())[:70],
-                "idle_s": int(now - last),
+                "activity": desc[:70],
+                "idle_s": int(now - last) if last else None,
                 "age_s": int(now - started) if started else 0,
             })
     return out
