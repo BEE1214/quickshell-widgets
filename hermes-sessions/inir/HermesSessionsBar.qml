@@ -13,7 +13,7 @@ MouseArea {
         : Appearance.inirEverywhere ? Appearance.inir.colText : Appearance.colors.colOnLayer1
     readonly property bool busy: HermesSessions.working > 0
 
-    implicitWidth: rowLayout.implicitWidth + 10 * 2
+    implicitWidth: rowLayout.implicitWidth + 3 * 2
     implicitHeight: Appearance.sizes.barHeight
 
     hoverEnabled: true

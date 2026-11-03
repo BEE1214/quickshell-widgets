@@ -17,7 +17,7 @@ MouseArea {
         return pct >= 90 ? warnColor : textColor
     }
 
-    implicitWidth: rowLayout.implicitWidth + 10 * 2
+    implicitWidth: rowLayout.implicitWidth + 3 * 2
     implicitHeight: Appearance.sizes.barHeight
 
     hoverEnabled: true
