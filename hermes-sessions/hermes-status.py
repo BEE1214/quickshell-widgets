@@ -7,7 +7,7 @@ Local files only, all databases opened read-only. Output:
       * delegations: each goal of a `running` row in async_delegations
         (the "Subagents · N live" panel; they run inside the Hermes process)
       * kanban: tasks with status `running` whose worker process is alive
-      * Claude Code: busy `claude -p` sessions whose parent process is Hermes
+      * Claude Code: busy `claude -p` sessions that have a Hermes process as an ancestor
   working   – number of agents
 """
 import glob, json, os, sqlite3, sys, time
@@ -147,14 +147,21 @@ def kanban_agents():
     return out
 
 
-def parent_is_hermes(pid):
-    try:
-        with open(f"/proc/{pid}/stat") as f:
-            ppid = f.read().rsplit(")", 1)[1].split()[1]
-        with open(f"/proc/{ppid}/cmdline", "rb") as f:
-            return b"hermes" in f.read().lower()
-    except (OSError, IndexError):
-        return False
+def hermes_ancestor(pid):
+    """True if a Hermes process is anywhere above `pid` (agents are often started via
+    wrapper scripts, so the direct parent is not necessarily Hermes)."""
+    for _ in range(12):
+        try:
+            with open(f"/proc/{pid}/stat") as f:
+                pid = int(f.read().rsplit(")", 1)[1].split()[1])
+            if pid <= 1:
+                return False
+            with open(f"/proc/{pid}/comm") as f:
+                if "hermes" in f.read().lower():
+                    return True
+        except (OSError, ValueError, IndexError):
+            return False
+    return False
 
 
 def claude_agents():
@@ -170,7 +177,7 @@ def claude_agents():
             continue
         if ticks != str(s.get("procStart")) or s.get("status") != "busy":
             continue
-        if s.get("entrypoint") == "claude-desktop" or not parent_is_hermes(pid):
+        if s.get("entrypoint") == "claude-desktop" or not hermes_ancestor(pid):
             continue
         out.append({
             "name": s.get("name") or os.path.basename(s.get("cwd", "")) or str(pid),

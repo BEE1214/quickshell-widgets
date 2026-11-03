@@ -12,7 +12,7 @@ lists sessions (with what each is doing) and the working subagents.
   - delegations: each goal of a `running` row in `async_delegations` (the in-process
     "Subagents · N live" panel),
   - kanban: tasks with status `running` whose worker pid is alive,
-  - Claude Code: busy `claude -p` sessions whose parent process is Hermes.
+  - Claude Code: busy `claude -p` sessions with a Hermes process as an ancestor (often started via a wrapper script).
 
 Install like the other iNiR widgets: `HermesSessions.qml` → `services/`,
 `HermesSessionsBar.qml` → `modules/bar/`, register both in the `qmldir` files, add a
