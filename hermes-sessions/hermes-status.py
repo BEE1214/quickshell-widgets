@@ -2,7 +2,9 @@
 """Print Hermes sessions and the subagents currently working, as JSON for Quickshell.
 
 Local files only, all databases opened read-only. Output:
-  sessions  – live Hermes CLI processes and recently active desktop sessions
+  sessions  – ACTIVE sessions only: CLI processes that are using CPU or have child
+              processes right now, and desktop sessions with Hermes activity in the last
+              2 minutes (idle ones are left out)
   agents    – subagents doing work right now, merged from:
       * delegations: each goal of a `running` row in async_delegations
         (the "Subagents · N live" panel; they run inside the Hermes process)
@@ -14,7 +16,9 @@ import glob, json, os, sqlite3, sys, time
 
 HOME = os.path.expanduser("~")
 HERMES = f"{HOME}/.hermes"
-ACTIVE_WINDOW_S = 1800  # desktop sessions count as live if active within 30 min
+ACTIVE_WINDOW_S = 120   # desktop sessions are active if Hermes logged activity this recently
+CPU_SAMPLE_S = 1.0      # CLI sessions have no activity record, so sample their CPU use
+CPU_ACTIVE_TICKS = 3    # >= this many clock ticks per sample (idle ones burn ~0.5)
 now = time.time()
 
 
@@ -42,8 +46,26 @@ def cwd_name(pid):
 
 
 # ---------------------------------------------------------------- sessions
+def cpu_ticks(pid):
+    try:
+        with open(f"/proc/{pid}/stat") as f:
+            fields = f.read().rsplit(")", 1)[1].split()
+        return int(fields[11]) + int(fields[12])  # utime + stime
+    except (OSError, ValueError, IndexError):
+        return None
+
+
+def has_children(pid):
+    try:
+        with open(f"/proc/{pid}/task/{pid}/children") as f:
+            return bool(f.read().strip())
+    except OSError:
+        return False
+
+
 def cli_sessions():
-    out = []
+    """Live CLI sessions that are working right now (idle ones are dropped)."""
+    live = []
     for f in [f"{HERMES}/runtime/active_sessions.json"] + sorted(
             glob.glob(f"{HERMES}/profiles/*/runtime/active_sessions.json")):
         prof = os.path.basename(os.path.dirname(os.path.dirname(f))) if "/profiles/" in f else "main"
@@ -53,16 +75,26 @@ def cli_sessions():
         except (OSError, ValueError):
             continue
         for e in entries:
-            if e.get("surface") != "cli" or not alive(e.get("pid")):
-                continue
-            out.append({
-                "kind": "cli",
-                "profile": prof,
-                "title": cwd_name(e["pid"]) or "cli",
-                "activity": "",
-                "idle_s": None,
-                "age_s": int(now - e.get("started_at", now)),
-            })
+            if e.get("surface") == "cli" and alive(e.get("pid")):
+                live.append((prof, e))
+    before = {e["pid"]: cpu_ticks(e["pid"]) for _, e in live}
+    time.sleep(CPU_SAMPLE_S)
+    out = []
+    for prof, e in live:
+        pid = e["pid"]
+        after, b = cpu_ticks(pid), before.get(pid)
+        busy = has_children(pid) or (after is not None and b is not None
+                                     and after - b >= CPU_ACTIVE_TICKS)
+        if not busy:
+            continue
+        out.append({
+            "kind": "cli",
+            "profile": prof,
+            "title": cwd_name(pid) or "cli",
+            "activity": "",
+            "idle_s": None,
+            "age_s": int(now - e.get("started_at", now)),
+        })
     return out
 
 

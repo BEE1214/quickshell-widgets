@@ -63,7 +63,8 @@ MouseArea {
             }
 
             StyledText {
-                text: Translation.tr("Sessions · %1").arg(HermesSessions.total)
+                text: HermesSessions.total > 0 ? Translation.tr("Active sessions · %1").arg(HermesSessions.total)
+                    : Translation.tr("No active sessions")
                 font { weight: Font.Medium; pixelSize: Appearance.font.pixelSize.smaller }
                 color: Appearance.colors.colOnSurfaceVariant
             }
@@ -80,10 +81,7 @@ MouseArea {
                             implicitWidth: 8
                             implicitHeight: 8
                             radius: 4
-                            readonly property bool recent: modelData.idle_s !== null && modelData.idle_s < 120
-                            color: recent ? Appearance.colors.colPrimary : "transparent"
-                            border.width: recent ? 0 : 1
-                            border.color: Appearance.colors.colOutline
+                            color: Appearance.colors.colPrimary
                             Layout.alignment: Qt.AlignVCenter
                         }
                         StyledText {
